@@ -12,7 +12,7 @@ namespace NWConsole.Model
         }
 
         public int CategoryId { get; set; }
-        [Required(ErrorMessage = "YO - Enter the name!")]
+        [Required(ErrorMessage = "Please enter a name for the category.")]
         public string CategoryName { get; set; }
         public string Description { get; set; }
 
