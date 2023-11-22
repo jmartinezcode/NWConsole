@@ -103,7 +103,12 @@ void AddCategory(NWContext db)
         else
         {
             logger.Info("Validation passed");
-            // TODO: save category to db
+            // Save category to db
+            db.AddCategory(category);
+            
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
+            logger.Info($"Category '{category.CategoryName}' added to the database.");
+            Console.ResetColor();
         }
     }
     if (!isValid)
