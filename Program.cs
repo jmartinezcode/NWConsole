@@ -39,10 +39,17 @@ try
                 // Display All Categories with Products
                 DisplayAllCategoriesWithProducts(db);
                 break;
+            case "5":
+                // Edit Category
+                EditCategory(db);
+                break;
             default:
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine("Invalid choice. Please try again.");
-                Console.ResetColor();
+                if (choice.ToLower() != "q")
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    Console.WriteLine("Invalid choice. Please try again.");
+                    Console.ResetColor();
+                }                
                 break;
         }        
         Console.WriteLine();
@@ -61,6 +68,7 @@ string DisplayMenu()
     Console.WriteLine("2) Add Category");
     Console.WriteLine("3) Display Category and related products");
     Console.WriteLine("4) Display all Categories and their related products");
+    Console.WriteLine("5) Edit Category");
     Console.WriteLine("\"q\" to quit");
 
     return Console.ReadLine();
@@ -82,11 +90,113 @@ void DisplayCategories(NWContext db)
 
 void AddCategory(NWContext db)
 {
+    Category category = ValidateCategory(db);
+    if (category != null)
+    {
+        // Add category
+        db.AddCategory(category);
+
+        Console.ForegroundColor = ConsoleColor.DarkGreen;
+        logger.Info($"Category '{category.CategoryName}' added to the database.");
+        Console.ResetColor();
+    }
+}
+
+void DisplayCategoryProducts(NWContext db)
+{
+    int id = GetCategoryID(db);
+    logger.Info($"CategoryId {id} selected");
+    // Filter for active Products only 
+    Category category = db.Categories
+        .Include(c => c.Products.Where(p => !p.Discontinued))
+        .FirstOrDefault(c => c.CategoryId == id);
+
+    Console.WriteLine($"Displaying {category.CategoryName} - {category.Description}");
+    foreach (Product p in category.Products)
+    {
+        Console.WriteLine($"\t{p.ProductName}");
+    }
+}
+
+void DisplayAllCategoriesWithProducts(NWContext db)
+{
+    // Filter for active Products only
+    var query = db.Categories
+        .Include(c => c.Products.Where(p => !p.Discontinued))
+        .OrderBy(p => p.CategoryId);
+
+    foreach (var item in query)
+    {
+        Console.WriteLine($"{item.CategoryName}");
+        foreach (Product p in item.Products)
+        {
+            Console.WriteLine($"\t{p.ProductName}");
+        }
+    }
+}
+int GetCategoryID(NWContext db)
+{
+    var query = db.Categories.OrderBy(p => p.CategoryId);
+
+    Console.WriteLine("Select the category:");
+    Console.ForegroundColor = ConsoleColor.Green;
+    foreach (var item in query)
+    {
+        Console.WriteLine($"{item.CategoryId}) {item.CategoryName}");
+    }
+    Console.ResetColor();
+    // Verify input
+    int id;
+    while (true)
+    {
+        Console.Write("Enter the category ID: ");
+        string input = Console.ReadLine();
+
+        if (int.TryParse(input, out id))
+        {
+            if (query.Any(c => c.CategoryId == id))
+            {
+                Console.Clear();
+                return id;
+            }
+            else
+                Console.WriteLine("Invalid category ID. Please try again.");
+        }
+        else
+            Console.WriteLine("Invalid input. Please enter a valid ID.");
+    }    
+}
+void EditCategory(NWContext db) 
+{
+    // Edit category
+    int id = GetCategoryID(db);
+    logger.Info($"CategoryId {id} selected");
+
+    // Get existing category
+    Category existingCategory = db.Categories.Find(id);
+
+    if (existingCategory != null)
+    {
+        Category updatedCategory = ValidateCategory(db);
+        if (updatedCategory != null)
+        {
+            updatedCategory.CategoryId = existingCategory.CategoryId;
+            db.EditCategory(updatedCategory);
+            logger.Info($"Category '{existingCategory.CategoryName}' updated successfully");
+        }
+    }
+    else
+        logger.Error($"Category with ID {id} not found.");
+}
+
+Category ValidateCategory(NWContext db)
+{
     Category category = new Category();
     Console.WriteLine("Enter Category Name:");
     category.CategoryName = Console.ReadLine();
     Console.WriteLine("Enter the Category Description:");
     category.Description = Console.ReadLine();
+    // Validate
     ValidationContext context = new ValidationContext(category, null, null);
     List<ValidationResult> results = new List<ValidationResult>();
 
@@ -103,12 +213,7 @@ void AddCategory(NWContext db)
         else
         {
             logger.Info("Validation passed");
-            // Save category to db
-            db.AddCategory(category);
-
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
-            logger.Info($"Category '{category.CategoryName}' added to the database.");
-            Console.ResetColor();
+            return category;
         }
     }
     if (!isValid)
@@ -118,47 +223,5 @@ void AddCategory(NWContext db)
             logger.Error($"{result.MemberNames.First()} : {result.ErrorMessage}");
         }
     }
-}
-
-void DisplayCategoryProducts(NWContext db)
-{
-    var query = db.Categories.OrderBy(p => p.CategoryId);
-
-    Console.WriteLine("Select the category whose products you want to display:");
-    Console.ForegroundColor = ConsoleColor.DarkRed;
-    foreach (var item in query)
-    {
-        Console.WriteLine($"{item.CategoryId}) {item.CategoryName}");
-    }
-    Console.ResetColor();
-    int id = int.Parse(Console.ReadLine());
-    Console.Clear();
-    logger.Info($"CategoryId {id} selected");
-    // Filter for active Products only 
-    Category category = db.Categories
-        .Include(c => c.Products.Where(p => !p.Discontinued))
-        .FirstOrDefault(c => c.CategoryId == id);
-
-    Console.WriteLine($"{category.CategoryName} - {category.Description}");
-    foreach (Product p in category.Products)
-    {
-        Console.WriteLine($"\t{p.ProductName}");
-    }
-}
-
-void DisplayAllCategoriesWithProducts(NWContext db)
-{
-    // Filter for active Products only
-    var query = db.Categories
-        .Include(c => c.Products.Where(p => !p.Discontinued))
-        .OrderBy(p => p.CategoryId);
-        
-    foreach (var item in query)
-    {
-        Console.WriteLine($"{item.CategoryName}");
-        foreach (Product p in item.Products)
-        {
-            Console.WriteLine($"\t{p.ProductName}");
-        }
-    }
+    return null;
 }

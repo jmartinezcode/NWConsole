@@ -33,6 +33,13 @@ namespace NWConsole.Model
             this.Categories.Add(category);
             this.SaveChanges();
         }
+        public void EditCategory(Category updatedCategory)
+        {
+            Category category = this.Categories.Find(updatedCategory.CategoryId);
+            category.CategoryName = updatedCategory.CategoryName;
+            category.Description = updatedCategory.Description;
+            this.SaveChanges();
+        }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
