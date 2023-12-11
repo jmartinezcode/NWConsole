@@ -34,5 +34,19 @@ namespace NWConsole.Model
         public virtual Category Category { get; set; }
         public virtual Supplier Supplier { get; set; }
         public virtual ICollection<OrderDetail> OrderDetails { get; set; }
+
+        public override string ToString()
+        {
+            return $"Product ID: {ProductId}\n" +
+               $"Product Name: {ProductName}\n" +
+               $"Supplier ID: {SupplierId}\n" +
+               $"Category ID: {CategoryId}\n" +
+               $"Quantity Per Unit: {QuantityPerUnit}\n" +
+               $"Unit Price: {UnitPrice}\n" +
+               $"Units In Stock: {UnitsInStock}\n" +
+               $"Units On Order: {UnitsOnOrder}\n" +
+               $"Reorder Level: {ReorderLevel}\n" +
+               $"Discontinued: {Discontinued}\n";
+        }
     }
 }

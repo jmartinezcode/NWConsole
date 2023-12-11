@@ -4,6 +4,7 @@ using NWConsole.Model;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
+using System.Xml.Serialization;
 
 string path = Directory.GetCurrentDirectory() + "\\nlog.config";
 
@@ -71,9 +72,17 @@ try
                                 switch (productsChoice)
                                 {
                                     case "1": // Display Products (ProductName only)                                        
+                                        DisplayAllProducts(db);
+                                        break;
                                     case "2": // Display Active Products (ProductName only)                                        
+                                        DisplayActiveProducts(db);
+                                        break;
                                     case "3": // Display Discontinued Products (ProductName only)
+                                        DisplayDiscontinuedProducts(db);
+                                        break;
                                     case "4": // Display Single Product (all fields displayed)
+                                        DisplaySingleProduct(db);
+                                        break;
                                     case "5": // Return to Previous Menu
                                         break;
                                     case "q": // Exit the program
@@ -174,18 +183,120 @@ string DisplayProductsSubMenu()
 
     return Console.ReadLine();
 }
+
 void DisplayCategories(NWContext db)
 {
     var query = db.Categories.OrderBy(p => p.CategoryName);
 
     Console.ForegroundColor = ConsoleColor.Green;
     Console.WriteLine($"{query.Count()} records returned");
-    Console.ForegroundColor = ConsoleColor.Magenta;
+    Console.ForegroundColor = ConsoleColor.DarkGreen;
     foreach (var item in query)
     {
         Console.WriteLine($"{item.CategoryName} - {item.Description}");
     }
     Console.ResetColor();
+}
+void DisplayCategoryProducts(NWContext db)
+{
+    int id = GetCategoryID(db, "display");
+    logger.Info($"CategoryId {id} selected");
+    // Filter for active Products only 
+    Category category = db.Categories
+        .Include(c => c.Products.Where(p => !p.Discontinued))
+        .FirstOrDefault(c => c.CategoryId == id);
+
+    Console.WriteLine($"Displaying {category.CategoryName} - {category.Description}");
+    foreach (Product p in category.Products)
+    {
+        Console.WriteLine($"\t{p.ProductName}");
+    }
+}
+void DisplayAllCategoriesWithProducts(NWContext db)
+{
+    // Filter for active Products only
+    var query = db.Categories
+        .Include(c => c.Products.Where(p => !p.Discontinued))
+        .OrderBy(p => p.CategoryId);
+
+    foreach (var item in query)
+    {
+        Console.WriteLine($"{item.CategoryName}");
+        foreach (Product p in item.Products)
+        {
+            Console.WriteLine($"\t{p.ProductName}");
+        }
+    }
+}
+
+void DisplayAllProducts(NWContext db)
+{
+    var query = db.Products.OrderBy(p => p.ProductName);
+
+    Console.ForegroundColor = ConsoleColor.Green;
+    Console.WriteLine($"{query.Count()} records returned");
+    Console.ResetColor();
+
+    foreach (var product in query)
+    {
+        if (!product.Discontinued)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
+            Console.WriteLine($"{product.ProductName}");            
+        }
+        else
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.WriteLine($"{product.ProductName} (Discontinued)");
+        }
+        Console.ResetColor();
+    }
+}
+void DisplayActiveProducts(NWContext db)
+{
+    var query = db.Products.Where(p => !p.Discontinued).OrderBy(p => p.ProductName);
+
+    Console.ForegroundColor = ConsoleColor.Green;
+    Console.WriteLine($"{query.Count()} active products returned");
+    Console.ForegroundColor = ConsoleColor.DarkGreen;
+    foreach (var product in query)
+    {
+        Console.WriteLine($"{product.ProductName}");        
+    }
+    Console.ResetColor();
+}
+void DisplayDiscontinuedProducts(NWContext db)
+{
+    var query = db.Products.Where(p => p.Discontinued).OrderBy(p => p.ProductName);
+
+    Console.ForegroundColor = ConsoleColor.Green;
+    Console.WriteLine($"{query.Count()} discontinued products returned");
+    Console.ForegroundColor = ConsoleColor.DarkGray;
+    foreach (var product in query)
+    {
+        Console.WriteLine($"{product.ProductName}");
+    }
+    Console.ResetColor();
+}
+void DisplaySingleProduct(NWContext db)
+{
+    int id = GetProductID(db, "display");
+    logger.Info($"ProductId {id} selected");
+
+    Console.ForegroundColor = ConsoleColor.DarkGreen;
+    Product product = db.Products.FirstOrDefault(p => p.ProductId == id);
+    Console.WriteLine(product);
+    Console.ResetColor();
+}
+string AddSubMenu()
+{
+    Console.WriteLine("Add Options");
+    Console.WriteLine("========================");
+    Console.WriteLine("1. Add Category");
+    Console.WriteLine("2. Add Product");
+    Console.WriteLine("3. Return to Main Menu");
+    Console.WriteLine("\"q\" to quit");
+    return Console.ReadLine();
 }
 
 void AddCategory(NWContext db)
@@ -204,70 +315,44 @@ void AddCategory(NWContext db)
         Console.ResetColor();
     }
 }
-
-void DisplayCategoryProducts(NWContext db)
+void AddProduct(NWContext db)
 {
-    int id = GetCategoryID(db, "display");
-    logger.Info($"CategoryId {id} selected");
-    // Filter for active Products only 
-    Category category = db.Categories
-        .Include(c => c.Products.Where(p => !p.Discontinued))
-        .FirstOrDefault(c => c.CategoryId == id);
-
-    Console.WriteLine($"Displaying {category.CategoryName} - {category.Description}");
-    foreach (Product p in category.Products)
-    {
-        Console.WriteLine($"\t{p.ProductName}");
-    }
-}
-
-void DisplayAllCategoriesWithProducts(NWContext db)
-{
-    // Filter for active Products only
-    var query = db.Categories
-        .Include(c => c.Products.Where(p => !p.Discontinued))
-        .OrderBy(p => p.CategoryId);
-
-    foreach (var item in query)
-    {
-        Console.WriteLine($"{item.CategoryName}");
-        foreach (Product p in item.Products)
-        {
-            Console.WriteLine($"\t{p.ProductName}");
-        }
-    }
-}
-int GetCategoryID(NWContext db, string mode)
-{
-    var query = db.Categories.OrderBy(p => p.CategoryId);
-
-    Console.WriteLine("Select the category:");
-    Console.ForegroundColor = ConsoleColor.Green;
-    foreach (var item in query)
-    {
-        Console.WriteLine($"{item.CategoryId}) {item.CategoryName}");
-    }
+    Console.ForegroundColor = ConsoleColor.DarkCyan;
+    Console.WriteLine("Adding Product");
     Console.ResetColor();
-    // Verify input
-    int id;
-    while (true)
+    Product product = ValidateProduct(db);
+    if (product != null)
     {
-        Console.Write($"Enter the category ID to {mode}: ");
-        string input = Console.ReadLine();
+        // Get Product Information
+        // SupplierID
+        product.SupplierId = GetSupplierID(db, product.ProductName);
+        // CategoryID
+        product.CategoryId = GetCategoryID(db, $"add {product.ProductName}");
+        // QTY/Unit
+        Console.Write("Enter Quantity Per Unit: ");
+        product.QuantityPerUnit = Console.ReadLine();
 
-        if (int.TryParse(input, out id))
-        {
-            if (query.Any(c => c.CategoryId == id))
-            {
-                Console.Clear();
-                return id;
-            }
-            else
-                Console.WriteLine("Invalid category ID. Please try again.");
-        }
-        else
-            Console.WriteLine("Invalid input. Please enter a valid ID.");
-    }    
+        // Discontinued
+        product.Discontinued = false;
+
+        // Add product
+        db.AddProduct(product);
+
+        Console.ForegroundColor = ConsoleColor.DarkGreen;
+        logger.Info($"Product '{product.ProductName}' added to the database.");
+        Console.ResetColor();
+    }
+}
+
+string EditSubMenu()
+{
+    Console.WriteLine("Edit Options");
+    Console.WriteLine("========================");
+    Console.WriteLine("1. Edit Category");
+    Console.WriteLine("2. Edit Product");
+    Console.WriteLine("3. Return to Main Menu");
+    Console.WriteLine("\"q\" to quit");
+    return Console.ReadLine();
 }
 void EditCategory(NWContext db) 
 {
@@ -293,6 +378,30 @@ void EditCategory(NWContext db)
     }
     else
         logger.Error($"Category with ID {id} not found.");
+}
+void EditProduct(NWContext db)
+{
+    // TODO
+}
+
+string DeleteSubMenu()
+{
+    Console.WriteLine("Delete Options");
+    Console.WriteLine("========================");
+    Console.WriteLine("1. Delete Category");
+    Console.WriteLine("2. Delete Product");
+    Console.WriteLine("3. Return to Main Menu");
+    Console.WriteLine("\"q\" to quit");
+    return Console.ReadLine();
+}
+
+void DeleteProduct(NWContext db)
+{
+    // TODO
+}
+void DeleteCategory(NWContext db)
+{
+    // TODO
 }
 
 Category ValidateCategory(NWContext db)
@@ -396,32 +505,37 @@ Product ValidateProduct(NWContext db)
     logger.Info("Validation passed");
     return product;    
 }
-void AddProduct(NWContext db)
+
+int GetCategoryID(NWContext db, string mode)
 {
-    Console.ForegroundColor = ConsoleColor.DarkCyan;
-    Console.WriteLine("Adding Product");
-    Console.ResetColor();
-    Product product = ValidateProduct(db);
-    if (product != null)
+    var query = db.Categories.OrderBy(p => p.CategoryId);
+
+    Console.WriteLine("Select the category:");
+    Console.ForegroundColor = ConsoleColor.Green;
+    foreach (var item in query)
     {
-        // Get Product Information
-        // SupplierID
-        product.SupplierId = GetSupplierID(db, product.ProductName);
-        // CategoryID
-        product.CategoryId = GetCategoryID(db, $"add {product.ProductName}");
-        // QTY/Unit
-        Console.Write("Enter Quantity Per Unit: ");
-        product.QuantityPerUnit = Console.ReadLine();
-        
-        // Discontinued
-        product.Discontinued = false;
+        Console.WriteLine($"{item.CategoryId}) {item.CategoryName}");
+    }
+    Console.ResetColor();
+    // Verify input
+    int id;
+    while (true)
+    {
+        Console.Write($"Enter the category ID to {mode}: ");
+        string input = Console.ReadLine();
 
-        // Add product
-        db.AddProduct(product);
-
-        Console.ForegroundColor = ConsoleColor.DarkGreen;
-        logger.Info($"Product '{product.ProductName}' added to the database.");
-        Console.ResetColor();
+        if (int.TryParse(input, out id))
+        {
+            if (query.Any(c => c.CategoryId == id))
+            {
+                Console.Clear();
+                return id;
+            }
+            else
+                Console.WriteLine("Invalid category ID. Please try again.");
+        }
+        else
+            Console.WriteLine("Invalid input. Please enter a valid ID.");
     }
 }
 int GetSupplierID(NWContext db, string mode)
@@ -456,6 +570,39 @@ int GetSupplierID(NWContext db, string mode)
             Console.WriteLine("Invalid input. Please enter a valid ID.");
     }
 }
+int GetProductID(NWContext db, string mode)
+{
+    var query = db.Products.OrderBy(p => p.ProductId);
+
+    Console.WriteLine("Select the Product:");
+    Console.ForegroundColor = ConsoleColor.Green;
+    foreach (var product in query)
+    {
+        Console.WriteLine($"{product.ProductId} {product.ProductName}");
+    }
+    Console.ResetColor();
+    // Verify input
+    int id;
+    while (true)
+    {
+        Console.Write($"Enter the Product ID to {mode}: ");
+        string input = Console.ReadLine();
+
+        if (int.TryParse(input, out id))
+        {
+            if (query.Any(p => p.ProductId == id))
+            {
+                Console.Clear();
+                return id;
+            }
+            else
+                Console.WriteLine("Invalid Product ID. Please try again.");
+        }
+        else
+            Console.WriteLine("Invalid input. Please enter a valid ID.");
+    }
+}
+
 bool ValidateProperty<T>(object instance, string propertyName, T value, out List<ValidationResult> results)
 {
     // modified for reusability
