@@ -1,5 +1,5 @@
 ## Application will do the following:
-❌ Add new records to the Products table  
+✅ Add new records to the Products table  
 ❌ Edit a specified record from the Products table   
 ❌ Display all records in the Products table (ProductName only) - user decides if they want to see all products, discontinued products, or active (not discontinued) products. Discontinued products should be distinguished from active products.  
 ❌ Display a specific Product (all product fields should be displayed)  

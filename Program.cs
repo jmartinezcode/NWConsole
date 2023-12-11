@@ -15,47 +15,108 @@ try
 {
     var db = new NWContext();
     string choice;
+
     do
-    {        
-        choice = DisplayMenu();
+    {
+        choice = DisplayMainMenu();
         Console.Clear();
         logger.Info($"Option {choice} selected");
 
         switch (choice)
         {
-            case "1":
-                // Display Categories
-                DisplayCategories(db);
+            case "1": // Display SubMenu            
+                string displayChoice;
+                do
+                {
+                    displayChoice = DisplaySubMenu();
+                    Console.Clear();
+                    logger.Info($"Option {displayChoice} selected");
+
+                    switch (displayChoice)
+                    {
+                        case "1": // Display Categories SubMenu                           
+                            string categoriesChoice;
+                            do
+                            {
+                                categoriesChoice = DisplayCategoriesSubMenu();
+                                Console.Clear();
+                                logger.Info($"Option {categoriesChoice} selected");
+                                // Handle categories submenu choices                              
+                                switch (categoriesChoice)
+                                {
+                                    case "1": // Display Categories (CategoryName only)
+                                        DisplayCategories(db);
+                                        break;
+                                    case "2": // Display Single Category and Related Products
+                                        DisplayCategoryProducts(db);
+                                        break;
+                                    case "3": // Display All Categories and their related products
+                                        DisplayAllCategoriesWithProducts(db);
+                                        break;
+                                    case "4": // Return to Display Sub Menu
+                                        break;                                    
+                                    case "q": // Exit the program
+                                        return;
+                                }
+                            } while (categoriesChoice != "4" && categoriesChoice.ToLower() != "q");
+                            break;
+                        case "2": // Display Products SubMenu
+                            string productsChoice;
+                            do
+                            {
+                                productsChoice = DisplayProductsSubMenu();
+                                Console.Clear();
+                                logger.Info($"Option {productsChoice} selected");
+                                // Handle products submenu choices
+                                switch (productsChoice)
+                                {
+                                    case "1": // Display Products (ProductName only)                                        
+                                    case "2": // Display Active Products (ProductName only)                                        
+                                    case "3": // Display Discontinued Products (ProductName only)
+                                    case "4": // Display Single Product (all fields displayed)
+                                    case "5": // Return to Previous Menu
+                                        break;
+                                    case "q": // Exit the program
+                                        return; 
+                                }
+                            } while (productsChoice != "5" && productsChoice.ToLower() != "q");
+                            break;
+                        case "3": // Returns to Main Menu                            
+                            break;
+                        case "q": // Exit the program
+                            return;
+                    }
+                } while (displayChoice != "3" && displayChoice.ToLower() != "q");
                 break;
-            case "2":
-                // Add Categories
-                AddCategory(db);
+            case "2": // Add SubMenu
                 break;
-            case "3":
-                // Display Category Products
-                DisplayCategoryProducts(db);
+            case "3": // Edit SubMenu
                 break;
-            case "4":
-                // Display All Categories with Products
-                DisplayAllCategoriesWithProducts(db);
+            case "4": // Delete SubMenu                
                 break;
-            case "5":
-                // Edit Category
-                EditCategory(db);
-                break;
-            case "6":
-                // Add Product
-                AddProduct(db);
-                break;
+
+            // case "2":
+            //     // Add Categories
+            //     AddCategory(db);
+            //     break;
+            // case "5":
+            //     // Edit Category
+            //     EditCategory(db);
+            //     break;
+            // case "6":
+            //     // Add Product
+            //     AddProduct(db);
+            //     break;
+            
             default:
                 if (choice.ToLower() != "q")
                 {
                     Console.ForegroundColor = ConsoleColor.DarkRed;
                     Console.WriteLine("Invalid choice. Please try again.");
                     Console.ResetColor();
-                }                
+                }
                 break;
-        }        
+        }
         Console.WriteLine();
     } while (choice.ToLower() != "q");
 }
@@ -66,19 +127,53 @@ catch (Exception ex)
 
 logger.Info("Program ended");
 
-string DisplayMenu()
+string DisplayMainMenu()
 {
-    Console.WriteLine("1) Display Categories");
-    Console.WriteLine("2) Add Category");
-    Console.WriteLine("3) Display Category and related products");
-    Console.WriteLine("4) Display all Categories and their related products");
-    Console.WriteLine("5) Edit Category");
-    Console.WriteLine("6) Add Product");
+    Console.WriteLine("Main Menu");
+    Console.WriteLine("=================");
+    Console.WriteLine("1. Display");
+    Console.WriteLine("2. Add");
+    Console.WriteLine("3. Edit");
+    Console.WriteLine("4. Delete");
     Console.WriteLine("\"q\" to quit");
 
     return Console.ReadLine();
 }
+string DisplaySubMenu()
+{
+    Console.WriteLine("Display Options");
+    Console.WriteLine("========================");
+    Console.WriteLine("1. Display Categories");
+    Console.WriteLine("2. Display Products");
+    Console.WriteLine("3. Return to Main Menu");
+    Console.WriteLine("\"q\" to quit");
+    return Console.ReadLine();
+}
+string DisplayCategoriesSubMenu()
+{
+    Console.WriteLine("Display Categories");
+    Console.WriteLine("=====================================================");
+    Console.WriteLine("1. Display Categories (CategoryName only)");
+    Console.WriteLine("2. Display Single Category and Related Products");
+    Console.WriteLine("3. Display All Categories and their related products");
+    Console.WriteLine("4. Return to Previous Menu");
+    Console.WriteLine("\"q\" to quit");
 
+    return Console.ReadLine();
+}
+string DisplayProductsSubMenu()
+{
+    Console.WriteLine("Display Products");
+    Console.WriteLine("====================================================");
+    Console.WriteLine("1. Display Products (ProductName only)");
+    Console.WriteLine("2. Display Active Products (ProductName only)");
+    Console.WriteLine("3. Display Discontinued Products (ProductName only)");
+    Console.WriteLine("4. Display Single Product (all fields displayed)");
+    Console.WriteLine("5. Return to Previous Menu");
+    Console.WriteLine("\"q\" to quit");
+
+    return Console.ReadLine();
+}
 void DisplayCategories(NWContext db)
 {
     var query = db.Categories.OrderBy(p => p.CategoryName);
