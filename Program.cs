@@ -43,6 +43,10 @@ try
                 // Edit Category
                 EditCategory(db);
                 break;
+            case "6":
+                // Add Product
+                AddProduct(db);
+                break;
             default:
                 if (choice.ToLower() != "q")
                 {
@@ -69,6 +73,7 @@ string DisplayMenu()
     Console.WriteLine("3) Display Category and related products");
     Console.WriteLine("4) Display all Categories and their related products");
     Console.WriteLine("5) Edit Category");
+    Console.WriteLine("6) Add Product");
     Console.WriteLine("\"q\" to quit");
 
     return Console.ReadLine();
@@ -90,6 +95,9 @@ void DisplayCategories(NWContext db)
 
 void AddCategory(NWContext db)
 {
+    Console.ForegroundColor = ConsoleColor.DarkCyan;
+    Console.WriteLine("Adding Category");
+    Console.ResetColor();
     Category category = ValidateCategory(db);
     if (category != null)
     {
@@ -104,7 +112,7 @@ void AddCategory(NWContext db)
 
 void DisplayCategoryProducts(NWContext db)
 {
-    int id = GetCategoryID(db);
+    int id = GetCategoryID(db, "display");
     logger.Info($"CategoryId {id} selected");
     // Filter for active Products only 
     Category category = db.Categories
@@ -134,7 +142,7 @@ void DisplayAllCategoriesWithProducts(NWContext db)
         }
     }
 }
-int GetCategoryID(NWContext db)
+int GetCategoryID(NWContext db, string mode)
 {
     var query = db.Categories.OrderBy(p => p.CategoryId);
 
@@ -149,7 +157,7 @@ int GetCategoryID(NWContext db)
     int id;
     while (true)
     {
-        Console.Write("Enter the category ID: ");
+        Console.Write($"Enter the category ID to {mode}: ");
         string input = Console.ReadLine();
 
         if (int.TryParse(input, out id))
@@ -169,7 +177,7 @@ int GetCategoryID(NWContext db)
 void EditCategory(NWContext db) 
 {
     // Edit category
-    int id = GetCategoryID(db);
+    int id = GetCategoryID(db, "edit");
     logger.Info($"CategoryId {id} selected");
 
     // Get existing category
@@ -177,6 +185,9 @@ void EditCategory(NWContext db)
 
     if (existingCategory != null)
     {
+        Console.ForegroundColor = ConsoleColor.DarkCyan;
+        Console.WriteLine("Editing Category");
+        Console.ResetColor();
         Category updatedCategory = ValidateCategory(db);
         if (updatedCategory != null)
         {
@@ -224,4 +235,156 @@ Category ValidateCategory(NWContext db)
         }
     }
     return null;
+}
+Product ValidateProduct(NWContext db)
+{
+    Product product = new Product();
+
+    // Validate ProductName
+    Console.WriteLine("Enter Product Name:");
+    product.ProductName = Console.ReadLine();
+    if (!ValidateProperty(product, nameof(Product.ProductName), product.ProductName, out var nameValidationResults))
+    {
+        DisplayValidationErrors(nameValidationResults);
+        return null;
+    }
+    // Validate Unique ProductName    
+    if (db.Products.Any(p => p.ProductName == product.ProductName))
+    {
+        DisplayValidationErrors(new List<ValidationResult>
+        {
+            new ValidationResult("Product Name already exists", new[] { nameof(Product.ProductName) })
+        });
+        return null;
+    }
+    
+    List<ValidationResult> unitPriceValidationResults = new List<ValidationResult>();
+    // Validate UnitPrice
+    Console.WriteLine("Enter Unit Price:");
+    if (!decimal.TryParse(Console.ReadLine(), out decimal unitPrice) || !ValidateProperty(product, nameof(Product.UnitPrice), unitPrice, out unitPriceValidationResults))
+    {
+        DisplayValidationErrors(unitPriceValidationResults);
+        return null;
+    }
+    product.UnitPrice = unitPrice;
+
+    List<ValidationResult> unitsInStockValidationResults = new List<ValidationResult>();
+    // Validate UnitsInStock
+    Console.WriteLine("Enter Units In Stock:");
+    if (!short.TryParse(Console.ReadLine(), out short unitsInStock) || !ValidateProperty(product, nameof(Product.UnitsInStock), unitsInStock, out unitsInStockValidationResults))
+    {
+        DisplayValidationErrors(unitsInStockValidationResults);
+        return null;
+    }
+    product.UnitsInStock = unitsInStock;
+
+    List<ValidationResult> unitsOnOrderValidationResults = new List<ValidationResult>();
+    // Validate UnitsOnOrder
+    Console.WriteLine("Enter Units On Order:");
+    if (!short.TryParse(Console.ReadLine(), out short unitsOnOrder) || !ValidateProperty(product, nameof(Product.UnitsOnOrder), unitsOnOrder, out unitsOnOrderValidationResults))
+    {
+        DisplayValidationErrors(unitsOnOrderValidationResults);
+        return null;
+    }
+    product.UnitsOnOrder = unitsOnOrder;
+
+    List<ValidationResult> reorderLevelValidationResults = new List<ValidationResult>();
+    // Validate ReOrderLevel
+    Console.WriteLine("Enter Reorder Level:");
+    if (!short.TryParse(Console.ReadLine(), out short reorderLevel) || !ValidateProperty(product, nameof(Product.ReorderLevel), reorderLevel, out reorderLevelValidationResults))
+    {
+        DisplayValidationErrors(reorderLevelValidationResults);
+        return null;
+    }
+    product.ReorderLevel = reorderLevel;
+
+    logger.Info("Validation passed");
+    return product;    
+}
+void AddProduct(NWContext db)
+{
+    Console.ForegroundColor = ConsoleColor.DarkCyan;
+    Console.WriteLine("Adding Product");
+    Console.ResetColor();
+    Product product = ValidateProduct(db);
+    if (product != null)
+    {
+        // Get Product Information
+        // SupplierID
+        product.SupplierId = GetSupplierID(db, product.ProductName);
+        // CategoryID
+        product.CategoryId = GetCategoryID(db, $"add {product.ProductName}");
+        // QTY/Unit
+        Console.Write("Enter Quantity Per Unit: ");
+        product.QuantityPerUnit = Console.ReadLine();
+        
+        // Discontinued
+        product.Discontinued = false;
+
+        // Add product
+        db.AddProduct(product);
+
+        Console.ForegroundColor = ConsoleColor.DarkGreen;
+        logger.Info($"Product '{product.ProductName}' added to the database.");
+        Console.ResetColor();
+    }
+}
+int GetSupplierID(NWContext db, string mode)
+{
+    var query = db.Suppliers.OrderBy(s => s.SupplierId);
+
+    Console.WriteLine("Select the Supplier:");
+    Console.ForegroundColor = ConsoleColor.Green;
+    foreach (var item in query)
+    {
+        Console.WriteLine($"{item.SupplierId}) {item.CompanyName}");
+    }
+    Console.ResetColor();
+    // Verify input
+    int id;
+    while (true)
+    {
+        Console.Write($"Enter the Supplier ID for {mode}: ");
+        string input = Console.ReadLine();
+
+        if (int.TryParse(input, out id))
+        {
+            if (query.Any(s => s.SupplierId == id))
+            {
+                Console.Clear();
+                return id;
+            }
+            else
+                Console.WriteLine("Invalid Supplier ID. Please try again.");
+        }
+        else
+            Console.WriteLine("Invalid input. Please enter a valid ID.");
+    }
+}
+bool ValidateProperty<T>(object instance, string propertyName, T value, out List<ValidationResult> results)
+{
+    // modified for reusability
+    instance.GetType().GetProperty(propertyName).SetValue(instance, value);
+
+    ValidationContext context = new ValidationContext(instance, null, null)
+    {
+        MemberName = propertyName
+    };
+
+    results = new List<ValidationResult>();
+    return Validator.TryValidateProperty(value, context, results);
+}
+void DisplayValidationErrors(List<ValidationResult> results)
+{
+    if (results.Count > 0)
+    {
+        foreach (var result in results)
+        {
+            logger.Error($"{result.MemberNames.First()} : {result.ErrorMessage}");
+        }
+    }
+    else
+    {
+        logger.Error("Invalid input. Please enter a valid value.");
+    }
 }
