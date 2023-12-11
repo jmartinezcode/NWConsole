@@ -98,25 +98,68 @@ try
                 } while (displayChoice != "3" && displayChoice.ToLower() != "q");
                 break;
             case "2": // Add SubMenu
+                string addChoice;
+                do
+                {
+                    addChoice = AddSubMenu();
+                    Console.Clear();
+                    logger.Info($"Option {addChoice} selected");
+
+                    switch (addChoice)
+                    {
+                        case "1": // Add Category
+                            AddCategory(db);
+                            break;
+                        case "2": // Add Product
+                            AddProduct(db);
+                            break;
+                        case "3": // Returns to Main Menu
+                            break;
+                        case "q": // Exit the program
+                            return;
+                    }
+                } while (addChoice != "3" && addChoice.ToLower() != "q");
                 break;
             case "3": // Edit SubMenu
-                break;
-            case "4": // Delete SubMenu                
-                break;
+                string editChoice;
+                do
+                {
+                    editChoice = EditSubMenu();
+                    Console.Clear();
+                    logger.Info($"Option {editChoice} selected");
 
-            // case "2":
-            //     // Add Categories
-            //     AddCategory(db);
-            //     break;
-            // case "5":
-            //     // Edit Category
-            //     EditCategory(db);
-            //     break;
-            // case "6":
-            //     // Add Product
-            //     AddProduct(db);
-            //     break;
-            
+                    switch (editChoice)
+                    {
+                        case "1": // Edit Category
+                            EditCategory(db);
+                            break;
+                        case "2": // Edit Product
+                        case "3": // Returns to Main Menu
+                            break;
+                        case "q": // Exit the program
+                            return;
+                    }
+                } while (editChoice != "3" && editChoice.ToLower() != "q");
+                break;
+            case "4": // Delete SubMenu   
+                string deleteChoice;
+                do
+                {
+                    deleteChoice = DeleteSubMenu();
+                    Console.Clear();
+                    logger.Info($"Option {deleteChoice} selected");
+
+                    switch (deleteChoice)
+                    {
+                        case "1": // Delete Category
+                        case "2": // Delete Product
+                        case "3": // Returns to Main Menu
+                            break;
+                        case "q": // Exit the program
+                            return;
+                    }
+                } while (deleteChoice != "3" && deleteChoice.ToLower() != "q");
+                break;              
             default:
                 if (choice.ToLower() != "q")
                 {
@@ -288,6 +331,7 @@ void DisplaySingleProduct(NWContext db)
     Console.WriteLine(product);
     Console.ResetColor();
 }
+
 string AddSubMenu()
 {
     Console.WriteLine("Add Options");
