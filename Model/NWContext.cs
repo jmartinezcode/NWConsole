@@ -45,6 +45,21 @@ namespace NWConsole.Model
             this.Products.Add(product);
             this.SaveChanges();
         }
+        public void EditProduct(Product updatedProduct)
+        {
+            Product product = this.Products.Find(updatedProduct.ProductId);
+            product.ProductName = updatedProduct.ProductName;
+            product.SupplierId = updatedProduct.SupplierId;
+            product.CategoryId = updatedProduct.CategoryId;
+            product.QuantityPerUnit = updatedProduct.QuantityPerUnit;
+            product.UnitPrice = updatedProduct.UnitPrice;
+            product.UnitsInStock = updatedProduct.UnitsInStock;
+            product.UnitsOnOrder = updatedProduct.UnitsOnOrder;
+            product.ReorderLevel = updatedProduct.ReorderLevel;
+            product.Discontinued = updatedProduct.Discontinued;
+
+            this.SaveChanges();
+        }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)

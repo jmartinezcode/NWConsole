@@ -134,6 +134,8 @@ try
                             EditCategory(db);
                             break;
                         case "2": // Edit Product
+                            EditProduct(db);
+                            break;
                         case "3": // Returns to Main Menu
                             break;
                         case "q": // Exit the program
@@ -410,7 +412,7 @@ void EditCategory(NWContext db)
     if (existingCategory != null)
     {
         Console.ForegroundColor = ConsoleColor.DarkCyan;
-        Console.WriteLine("Editing Category");
+        Console.WriteLine($"Editing {existingCategory.CategoryName} Category");
         Console.ResetColor();
         Category updatedCategory = ValidateCategory(db);
         if (updatedCategory != null)
@@ -425,7 +427,141 @@ void EditCategory(NWContext db)
 }
 void EditProduct(NWContext db)
 {
-    // TODO
+    // Edit product
+    int id = GetProductID(db, "edit");
+    logger.Info($"ProductId {id} selected");
+
+    // Get existing product
+    Product existingProduct = db.Products.Find(id);
+    if (existingProduct != null)
+    {
+        Console.ForegroundColor = ConsoleColor.DarkCyan;
+        Console.WriteLine($"Editing \n{existingProduct}");
+        Console.ResetColor();
+        while (true)
+        {
+            Console.WriteLine("Select the property to edit:");
+            Console.WriteLine("1. Product Name");
+            Console.WriteLine("2. Supplier ID");
+            Console.WriteLine("3. Category ID");
+            Console.WriteLine("4. QTY Per Unit");
+            Console.WriteLine("5. Unit Price");
+            Console.WriteLine("6. Units In Stock");
+            Console.WriteLine("7. Units On Order");
+            Console.WriteLine("8. Reorder Level");
+            Console.WriteLine("9. Discontinued");
+            Console.WriteLine("0. Save and Exit");
+            Console.WriteLine("x. Discard Changes and Exit");
+
+            Console.Write("Enter your choice: ");
+            string choice = Console.ReadLine();
+
+            if (choice == "0")
+            {
+                // User chose to save and exit     
+                db.EditProduct(existingProduct);
+                logger.Info($"Product '{existingProduct.ProductName}' updated successfully");
+                break;
+            }
+            else if (choice.ToLower() == "x")
+            {
+                // User chose to discard changes and exit
+                Console.WriteLine("Discarding changes and exiting...");
+                break;
+            }
+
+            switch (choice)
+            {
+                case "1": // Product Name
+                    Console.Write("Enter new Product Name: ");
+                    string newProductName = Console.ReadLine();
+                    // Validate product name
+
+                    ValidationContext context = new ValidationContext(existingProduct, null, null);
+                    List<ValidationResult> results = new List<ValidationResult>();
+
+                    var isValid = Validator.TryValidateObject(existingProduct, context, results, true);
+                    if (isValid)
+                    {
+                        // check for unique name
+                        if (db.Products.Any(p => p.ProductName == newProductName))
+                        {
+                            // generate validation error
+                            isValid = false;
+                            results.Add(new ValidationResult("Name exists", new string[] { "ProductName" }));
+                        }
+                        else
+                        {
+                            logger.Info("Validation passed");
+                            existingProduct.ProductName = newProductName;
+                        }
+                    }
+                    if (!isValid)
+                    {
+                        foreach (var result in results)
+                        {
+                            logger.Error($"{result.MemberNames.First()} : {result.ErrorMessage}");
+                        }
+                    }
+                    break;
+                case "2": // Supplier ID
+                    existingProduct.SupplierId = GetSupplierID(db, existingProduct.ProductName);
+                    break;
+                case "3": // Category ID
+                    existingProduct.CategoryId = GetCategoryID(db, $"edit {existingProduct.ProductName}");
+                    break;
+                case "4": // QTY Per Unit
+                    Console.Write("Enter new QTY Per Unit: ");
+                    existingProduct.QuantityPerUnit = Console.ReadLine();
+                    break;
+                case "5": // Unit Price
+                    Console.Write("Enter new Unit Price: ");
+                    if (decimal.TryParse(Console.ReadLine(), out decimal unitPrice))
+                        existingProduct.UnitPrice = unitPrice;
+                    else
+                        Console.WriteLine("Invalid input for Unit Price. Please enter a valid decimal.");
+                    break;
+                case "6": // Units in Stock
+                    Console.Write("Enter new Units In Stock: ");
+                    if (short.TryParse(Console.ReadLine(), out short unitsInStock))
+                        existingProduct.UnitsInStock = unitsInStock;
+                    else
+                        Console.WriteLine("Invalid input for Units In Stock. Please enter a valid short.");
+                    break;
+                case "7": // Units on Order
+                    Console.Write("Enter new Units On Order: ");
+                    if (short.TryParse(Console.ReadLine(), out short unitsOnOrder))
+                        existingProduct.UnitsOnOrder = unitsOnOrder;
+                    else
+                        Console.WriteLine("Invalid input for Units On Order. Please enter a valid short.");
+                    break;
+                case "8": // Reorder Level
+                    Console.Write("Enter new Reorder Level: ");
+                    if (short.TryParse(Console.ReadLine(), out short reorderLevel))
+                        existingProduct.ReorderLevel = reorderLevel;
+                    else
+                        Console.WriteLine("Invalid input for Reorder Level. Please enter a valid short.");
+                    break;
+                case "9": // Discontinued
+                    Console.Write("Is the product discontinued? (y/n): ");
+                    string discontinuedInput = Console.ReadLine()?.ToLower();
+
+                    if (discontinuedInput == "y")
+                        existingProduct.Discontinued = true;                    
+                    else if (discontinuedInput == "n")
+                        existingProduct.Discontinued = false;                    
+                    else
+                        Console.WriteLine("Invalid input for Discontinued. Please enter 'y' for true or 'n' for false.");
+                    break;
+                default:
+                    Console.WriteLine("Invalid choice. Please enter a valid option.");
+                    break;
+            }
+
+        }        
+    }
+    else
+        logger.Error($"Product with ID {id} not found");
 }
 
 string DeleteSubMenu()
