@@ -188,11 +188,11 @@ logger.Info("Program ended");
 string DisplayMainMenu()
 {
     Console.WriteLine("Main Menu");
-    Console.WriteLine("=================");
-    Console.WriteLine("1. Display");
-    Console.WriteLine("2. Add");
-    Console.WriteLine("3. Edit");
-    Console.WriteLine("4. Delete");
+    Console.WriteLine("===========================");
+    Console.WriteLine("1. Display Category/Product");
+    Console.WriteLine("2. Add Category/Product");
+    Console.WriteLine("3. Edit Category/Product");
+    Console.WriteLine("4. Delete Category/Product");
     Console.WriteLine("\"q\" to quit");
 
     return Console.ReadLine();
@@ -649,7 +649,9 @@ void DeleteCategory(NWContext db)
                 }
 
                 // Delete products in the category NOT associated with order details
-                var productsToDelete = db.Products.Where(p => p.CategoryId == categoryToDelete.CategoryId && !db.OrderDetails.Any(od => od.ProductId == p.ProductId));
+                var productsToDelete = db.Products
+                    .Where(p => p.CategoryId == categoryToDelete.CategoryId && !db.OrderDetails.Any(od => od.ProductId == p.ProductId))
+                    .ToList();
                 foreach (var product in productsToDelete)
                 {
                     db.DeleteProduct(product);
