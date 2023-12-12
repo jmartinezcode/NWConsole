@@ -10,6 +10,6 @@
 ✅ Display all Categories and their related active (not discontinued)product data (CategoryName, ProductName)  
 ✅ Display a specific Category and its related active product data (CategoryName, ProductName)  
 ✅ Delete a specified existing record from the Products table (account for Orphans in related tables)  
-❌ Delete a specified existing record from the Categories table (account for Orphans in related tables)  
+✅ Delete a specified existing record from the Categories table (account for Orphans in related tables)  
 ✅ Use data annotations and handle ALL user errors gracefully & log all errors using NLog
 

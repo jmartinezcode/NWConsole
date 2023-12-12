@@ -40,6 +40,11 @@ namespace NWConsole.Model
             category.Description = updatedCategory.Description;
             this.SaveChanges();
         }
+        public void DeleteCategory(Category categoryToDelete)
+        {
+            this.Categories.Remove(categoryToDelete);
+            this.SaveChanges();
+        }
         public void AddProduct(Product product)
         {
             this.Products.Add(product);

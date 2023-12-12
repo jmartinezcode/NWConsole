@@ -594,8 +594,8 @@ void DeleteProduct(NWContext db)
 
         if (hasOrderDetails)
         {
-            Console.ForegroundColor = ConsoleColor.DarkYellow;
-            logger.Warn($"Deletion aborted. {productToDelete.ProductName} is associated with order details.");
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            logger.Error($"Deletion aborted. {productToDelete.ProductName} is associated with order details.");
             Console.ResetColor();
             return;
         }
@@ -611,7 +611,61 @@ void DeleteProduct(NWContext db)
 }
 void DeleteCategory(NWContext db)
 {
-    // TODO
+    int categoryId = GetCategoryID(db, "delete");
+    logger.Info($"CategoryID {categoryId} selected for deletion");
+
+    // Get category to delete
+    Category categoryToDelete = db.Categories.Find(categoryId);
+
+    if (categoryToDelete != null)
+    {
+        // Check if there are any products in the category
+        bool hasProductsInCategory = db.Products.Any(p => p.CategoryId == categoryToDelete.CategoryId);
+
+        if (hasProductsInCategory)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            logger.Warn($"There are products in {categoryToDelete.CategoryName} category. Deleting will affect existing products.");
+            Console.Write("Are you sure you want to proceed? (y/n): ");
+            Console.ResetColor();
+            string confirmation = Console.ReadLine()?.ToLower();
+
+            if (confirmation != "y")
+            {
+                Console.WriteLine("Deletion aborted.");
+                return;
+            }
+            else
+            {
+                // Check if any product in the category has order details
+                bool anyProductHasOrderDetails = db.OrderDetails.Any(od => od.Product.CategoryId == categoryToDelete.CategoryId);
+
+                if (anyProductHasOrderDetails)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    logger.Error($"Deletion Aborted. There are products in {categoryToDelete.CategoryName} with order details.");
+                    Console.ResetColor();
+                    return;
+                }
+
+                // Delete products in the category NOT associated with order details
+                var productsToDelete = db.Products.Where(p => p.CategoryId == categoryToDelete.CategoryId && !db.OrderDetails.Any(od => od.ProductId == p.ProductId));
+                foreach (var product in productsToDelete)
+                {
+                    db.DeleteProduct(product);
+                    logger.Info($"Product '{product.ProductName}' deleted successfully.");
+                }
+            }
+        }       
+
+        // Remove category
+        db.DeleteCategory(categoryToDelete);
+        logger.Info($"Category '{categoryToDelete.CategoryName}' deleted successfully.");
+    }
+    else
+    {
+        logger.Error($"Category with ID {categoryId} not found.");
+    }
 }
 
 Category ValidateCategory(NWContext db)
