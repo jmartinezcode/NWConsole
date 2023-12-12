@@ -60,6 +60,12 @@ namespace NWConsole.Model
 
             this.SaveChanges();
         }
+        public void DeleteProduct(Product productToDelete)
+        {            
+            this.Products.Remove(productToDelete);
+            this.SaveChanges();
+
+        }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)

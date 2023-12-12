@@ -154,7 +154,11 @@ try
                     switch (deleteChoice)
                     {
                         case "1": // Delete Category
+                            DeleteCategory(db);
+                            break;
                         case "2": // Delete Product
+                            DeleteProduct(db);
+                            break;
                         case "3": // Returns to Main Menu
                             break;
                         case "q": // Exit the program
@@ -577,7 +581,33 @@ string DeleteSubMenu()
 
 void DeleteProduct(NWContext db)
 {
-    // TODO
+    int id = GetProductID(db, "delete");
+    logger.Info($"ProductID {id} selected for deletion");
+
+    // Get product to delete
+    Product productToDelete = db.Products.Find(id);
+    
+    if (productToDelete != null)
+    {
+        // Check if the product is associated with any OrderDetails
+        bool hasOrderDetails = db.OrderDetails.Any(od => od.ProductId == productToDelete.ProductId);
+
+        if (hasOrderDetails)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            logger.Warn($"Deletion aborted. {productToDelete.ProductName} is associated with order details.");
+            Console.ResetColor();
+            return;
+        }
+        
+        db.DeleteProduct(productToDelete);
+
+        logger.Info($"Product '{productToDelete.ProductName}' deleted successfully.");
+    }
+    else
+    {
+        logger.Error($"Product with ID {id} not found.");
+    }
 }
 void DeleteCategory(NWContext db)
 {
